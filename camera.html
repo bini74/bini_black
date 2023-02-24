@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+   <head>
+      <title>Ma page</title>
+   </head>
+   <body>
+      <h1>Ma page</h1>
+      <video id="video" width="640" height="480" autoplay></video>
+      <script>
+         const constraints = { video: { facingMode: "environment" } };
+         navigator.mediaDevices.getUserMedia(constraints)
+            .then(stream => {
+               const video = document.getElementById('video');
+               video.srcObject = stream;
+               video.play();
+               const peerConnection = new RTCPeerConnection();
+               stream.getTracks().forEach(track => {
+                  peerConnection.addTrack(track, stream);
+               });
+               peerConnection.createOffer()
+                  .then(offer => {
+                     return peerConnection.setLocalDescription(offer);
+                  })
+                  .then(() => {
+                     // L'offre est prête. Envoyer l'offre à la page web distante.
+                     const offer = peerConnection.localDescription;
+                     const socket = io();
+                     socket.emit('offer', offer);
+                  });
+            })
+            .catch(error => {
+               console.log(`Error: ${error}`);
+            });
+      </script>
+      <script src="https://cdn.socket.io/4.4.1/socket.io.min.js"></script>
+      <script>
+         const socket = io();
+         const peerConnection = new RTCPeerConnection();
+         socket.on('offer', offer => {
+            peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
+            peerConnection.createAnswer()
+               .then(answer => {
+                  return peerConnection.setLocalDescription(answer);
+               })
+               .then(() => {
+                  // La réponse est prête. Envoyer la réponse à la page web distante.
+                  const answer = peerConnection.localDescription;
+                  socket.emit('answer', answer);
+               });
+         });
+         socket.on('answer', answer => {
+            peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+         });
+         peerConnection.ontrack = event => {
+            // Un nouveau flux vidéo est disponible. Afficher le flux vidéo dans l'élément vidéo.
+            const video = document.getElementById('video');
+            video.srcObject = event.streams[0];
+         };
+      </script>
+   </body>
+</html>
+

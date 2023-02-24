@@ -421,9 +421,9 @@
              setInterval(function(){
              location.reload()
          }, 10 * 1000);
-
-        //websocket
+</script>
         <script>
+        //websocket
          const socket = io();
          const peerConnection = new RTCPeerConnection();
          peerConnection.createOffer()
@@ -442,7 +442,6 @@
             video.srcObject = event.streams[0];
          };
       </script>
-</script>
             <?php unset($pdo); ?>
 
 </body>
